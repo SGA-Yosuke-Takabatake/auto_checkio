@@ -1,0 +1,14 @@
+{
+  "name": "pupp_dev",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "test pup"
+  },
+  "author": "Yosuke.Takabatake",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer-core": "^13.5.2"
+  }
+}
