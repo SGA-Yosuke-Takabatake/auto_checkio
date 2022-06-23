@@ -4,7 +4,7 @@ const puppeteer = require('puppeteer-core');
 
 
 function show_title() {
-  const version = "0.1.2"
+  const version = "0.1.3"
   const cui_line    = '*******************************************'
   const cui_mid     = '*                                         *'
   const cui_title   = '*        CheckIn/Out Automator            *'
@@ -59,7 +59,7 @@ function get_argument_param() {
 async function chckIO_automator(chck_mode, isHeadless){
   const browser = await puppeteer.launch({
     headless: isHeadless,
-	  executablePath: ''
+	  executablePath: 'please input your Edge browser path'
   });
 
   process.stdout.write('puppeteer setup.');
@@ -70,9 +70,9 @@ async function chckIO_automator(chck_mode, isHeadless){
   console.log('Success');
 
   try {
-    // IPA を開く
-    process.stdout.write('open IPA page...');
-    await page.goto('', {'waitUntil': 'networkidle0'});
+    // checkin ページを開く
+    process.stdout.write('open checkin page...');
+    await page.goto('please input checkin page address, {'waitUntil': 'networkidle0'});
     console.log('Success');
 
     // インフォメーションを閉じる
@@ -104,9 +104,46 @@ async function chckIO_automator(chck_mode, isHeadless){
     // Save&Notifyボタン表示待ち
     await page.waitForSelector('.modal-check' + chck_mode + ' .btn-checkin-and-notify', {visible: true});
     process.stdout.write('.');
+
+    // 体調チェック存在チェック
+    let healthCheckContent = await page.$(".additional-area");
+    let hasHealthCheck = await healthCheckContent.evaluate((ele) => {
+      return ele.style['display'] != 'none';
+    });
+
+    if(hasHealthCheck && chck_mode == 'in') {
+      const mouse = page.mouse;
+
+      // 自分の体温情報
+      const radio1 = await page.$('label[for=safety-info01-01]');
+      const radio1_rect = await radio1.boundingBox();
+      await mouse.move(parseFloat(radio1_rect.x + 5), parseFloat(radio1_rect.y + 5))
+      await page.waitForTimeout(1000);
+      await mouse.click(parseFloat(radio1_rect.x + 5), parseFloat(radio1_rect.y + 5), {
+        button: 'left',
+        clickCount: 1,
+        delay: 0,
+      })
+      await page.waitForTimeout(500);
+
+      // 家族の体温情報
+      const radio2 = await page.$('label[for=safety-info02-01]');
+      const radio2_rect = await radio2.boundingBox();
+      await mouse.move(parseFloat(radio2_rect.x + 5), parseFloat(radio2_rect.y + 5))
+      await page.waitForTimeout(1000);
+      await mouse.click(parseFloat(radio2_rect.x + 5), parseFloat(radio2_rect.y + 5), {
+        button: 'left',
+        clickCount: 1,
+        delay: 0,
+      })
+      await page.waitForTimeout(500);
+    }
+
     // Save&Notifyボタン押下
-    await page.click('.modal-check' + chck_mode + ' .btn-checkin-and-notify');
-    // await page.click('.modal-check' + chck_mode + ' .btn-cancel');
+    // 動作チェック時はチェックインしないように以下を使う
+    // await page.click('.modal-check' + chck_mode + ' .btn-checkin-and-notify');
+    // await page.waitForTimeout(2000);
+    await page.click('.modal-check' + chck_mode + ' .btn-cancel');
     // Save&Notify実施待ち
     process.stdout.write('.');
     await page.waitForTimeout(2000);
@@ -121,16 +158,12 @@ async function chckIO_automator(chck_mode, isHeadless){
 }
 
 async function main(){
-  // let params = get_argument_param();
-  const mode = 'in';
-  // const mode = 'out';
-  const headless = true;
+  let params = get_argument_param();
   show_title();
-  // console.log("start mode is check'" + params.mode + "'");
-  console.log("start mode is check'" + mode + "'");
+  console.log("start mode is check'" + params.mode + "'");
 
   try {
-    await chckIO_automator(mode, headless);  
+    await chckIO_automator(params.mode, params.headless);  
     console.log('all steps are completed');
   } catch(e) {
     console.log('******* Error Occured! **********');
